@@ -122,6 +122,20 @@ class FeedViewController: UIViewController,
         return cell
     }
     
+    //UICollectionViewDelegate
+    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        //get the feed item that we are working with
+        let thisItem = feedArray[indexPath.row] as FeedItem
+        
+        var filterVC = FilterViewController()
+        filterVC.thisFeedItem = thisItem
+        
+        self.navigationController?.pushViewController(filterVC, animated: false)
+    }
+    
+    
+    
+    
     
     
     
