@@ -19,6 +19,12 @@ class FilterViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     var filters:[CIFilter] = []
     
+    //cached placeholder image
+    let placeholderImage = UIImage(named: "Placeholder")
+    
+    //caching
+    let tmp = NSTemporaryDirectory()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -58,12 +64,15 @@ class FilterViewController: UIViewController, UICollectionViewDataSource, UIColl
     
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         let cell: FilterCell = collectionView.dequeueReusableCellWithReuseIdentifier("MyCell", forIndexPath: indexPath) as FilterCell
-        cell.imageView.image = UIImage(named: "Placeholder")
+        
+        //check if we already loaded our image
+        
+        cell.imageView.image = placeholderImage
         
         let filterQueue:dispatch_queue_t = dispatch_queue_create("filter queue", nil)
         
         dispatch_async(filterQueue, { () -> Void in
-            let filterImage = self.filteredImageFromImage(self.thisFeedItem.image, filter: self.filters[indexPath.row])
+            let filterImage = self.getCachedImage(indexPath.row)
             
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
                 cell.imageView.image = filterImage
@@ -71,6 +80,20 @@ class FilterViewController: UIViewController, UICollectionViewDataSource, UIColl
         })
         
         return cell
+    }
+    
+    //UICollectionViewDelegate
+    
+    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        let filterImage = self.filteredImageFromImage(self.thisFeedItem.image, filter: self.filters[indexPath.row])
+        let imageData = UIImageJPEGRepresentation(filterImage, 1.0)
+        
+        self.thisFeedItem.image = imageData
+        let thumnailData = UIImageJPEGRepresentation(filterImage, 0.1)
+        self.thisFeedItem.thumbnail = thumnailData
+        
+        (UIApplication.sharedApplication().delegate as AppDelegate).saveContext()
+        self.navigationController?.popViewControllerAnimated(true)
     }
     
     //Helper functions
@@ -116,4 +139,39 @@ class FilterViewController: UIViewController, UICollectionViewDataSource, UIColl
         
         return finalImage!
     }
+    
+    //Caching functions
+    
+    func cacheImage(imageNumber: Int) {
+        let filename = "\(imageNumber)"
+        let uniquePath = tmp.stringByAppendingPathComponent(filename)
+        
+        //check if file exists already
+        if(!NSFileManager.defaultManager().fileExistsAtPath(filename)){
+            let data = self.thisFeedItem.thumbnail
+            let filter = self.filters[imageNumber]
+            let image = filteredImageFromImage(data, filter: filter)
+            
+            UIImageJPEGRepresentation(image, 1.0).writeToFile(uniquePath, atomically: true)
+        }
+    }
+    
+    func getCachedImage(imageNumber:Int) -> UIImage {
+        let fileName = "\(imageNumber)"
+        let uniquePath = tmp.stringByAppendingPathComponent(fileName)
+        
+        var image = UIImage()
+        
+        if(NSFileManager.defaultManager().fileExistsAtPath(uniquePath)){
+            image = UIImage(contentsOfFile: uniquePath)!
+        }
+        else {
+            self.cacheImage(imageNumber)
+            image = UIImage(contentsOfFile: uniquePath)!
+        }
+        
+        return image
+    }
+    
+    
 }

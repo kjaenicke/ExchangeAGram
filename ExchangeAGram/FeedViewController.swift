@@ -30,22 +30,20 @@ class FeedViewController: UIViewController,
         let context:NSManagedObjectContext = appDelegate.managedObjectContext!
         feedArray = context.executeFetchRequest(request, error: nil)!
     }
+    
+    override func viewDidAppear(animated: Bool) {
+        let request = NSFetchRequest(entityName: "FeedItem")
+        let appDelegate:AppDelegate = (UIApplication.sharedApplication().delegate as AppDelegate)
+        let context:NSManagedObjectContext = appDelegate.managedObjectContext!
+        feedArray = context.executeFetchRequest(request, error: nil)!
+        collectionView.reloadData()
+    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    
 
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
     
     @IBAction func snapBarButtonItemTapped(sender: UIBarButtonItem) {
         if UIImagePickerController.isSourceTypeAvailable(.Camera){
@@ -82,6 +80,7 @@ class FeedViewController: UIViewController,
         //get the image from the ImagePickerController
         let image = info[UIImagePickerControllerOriginalImage] as UIImage
         let imageData = UIImageJPEGRepresentation(image, 1.0)
+        let thumbnailData = UIImageJPEGRepresentation(image, 0.1)
         
         //create FeedItem entity
         let managedObjectContext = (UIApplication.sharedApplication().delegate as AppDelegate).managedObjectContext
@@ -91,6 +90,7 @@ class FeedViewController: UIViewController,
         //set properties
         feedItem.image = imageData
         feedItem.caption = "test caption"
+        feedItem.thumbnail = thumbnailData
         
         //save changes made to entity
         (UIApplication.sharedApplication().delegate as AppDelegate).saveContext()
